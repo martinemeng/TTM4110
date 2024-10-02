@@ -11,9 +11,10 @@ PROB_LEAVE_STOP = 0.3 # Probability of a passenger leaving the bus stop
 UTILIZATION = {
     'bus_id1': {'avg_util':[]}
 }
+print('Hei')
 
-#bus stop 0-6 is the westbound stops for stop 1-7
-#bus stop 10-16 is the eastbound stops for stop 1-7
+#bus stop 0-6 is the eastbound stops for stop 1-7
+#bus stop 10-16 is the westbound stops for stop 1-7
 routes = {
     'Route_13': {'stops': [0, 3, 5], 'roads': [0, 4, 7, 12]},
     'Route_14': {'stops': [1, 4, 6], 'roads': [2, 6, 10, 14]},
@@ -140,7 +141,7 @@ class Bus:
                 print(f'Bus {self.bus_id} trip completed at {self.env.now}')
                 utilizations.append(taken_seats / self.max_capacity)
                 avg_utilization = np.mean(utilizations)
-                UTILIZATION['busid1']['avg_util'].append(avg_utilization)
+                UTILIZATION['bus_id1']['avg_util'].append(avg_utilization)
                 
 
 
