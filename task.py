@@ -159,32 +159,33 @@ def run_simulation():
             env.process(bus.run())
 
     # Run the simulation for a set time
-    env.run(until=15)
+    env.run(until=50)
 
 # Run the simulation
 run_simulation()
 
 utilizations_per_bus_count = []
 bus_numbers = [5, 7, 10, 15]
+total_utilizations_mean = []
 
 for num_buses in bus_numbers:
     run_simulation()
     print(UTILIZATION.values())
     for key in list(UTILIZATION.keys())[:num_buses]:
-        print(key)
         utilizations_per_bus_count.append(UTILIZATION[key]['avg_util'])
-    print(utilizations_per_bus_count)
-    print("uti", UTILIZATION)
+    util_mean_per_bus_count = np.mean(utilizations_per_bus_count)
+    util_std_per_bus_count = np.std(utilizations_per_bus_count) / np.sqrt(len(utilizations_per_bus_count))
+    total_utilizations_mean.append(util_mean_per_bus_count)
     utilizations_per_bus_count.clear()
+    print(total_utilizations_mean)
 
 
-# Calculate averages and standard errors
-means = [np.mean(util) for util in utilizations_per_bus_count if util]
-std_errs = [np.std(util) / np.sqrt(int(util)) for util in utilizations_per_bus_count if util]
-print(len(means), len(bus_numbers))
+
+#std_errs = [np.std(util) / np.sqrt(int(util)) for util in utilizations_per_bus_count if util]
+#print(len(means), len(bus_numbers))
 
 # Plot the results
-plt.errorbar(bus_numbers, means, yerr=std_errs, fmt='o', capsize=5, capthick=2, marker='s', markersize=5, label='Avg Utilization')
+plt.errorbar(bus_numbers, total_utilizations_mean, yerr=util_std_per_bus_count, fmt='o', capsize=5, capthick=2, marker='s', markersize=5, label='Avg Utilization')
 plt.xlabel('Number of Buses')
 plt.ylabel('Average Utilization')
 plt.title('Average Bus Utilization vs Number of Buses')
