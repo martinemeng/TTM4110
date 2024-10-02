@@ -1,13 +1,14 @@
+from matplotlib import pyplot as plt
 import simpy
 import random
 import numpy as np
 
 # Constants
-BUSES = 10     # Number of buses
 MAX_CAPACITY = 20  # Bus capacity
 INTERVAL = 5   # Time between passenger arrivals
 TRIP_TIME = 10 # Time for a bus trip
 PROB_LEAVE_STOP = 0.3 # Probability of a passenger leaving the bus stop
+
 
 routes = {
     'Route_13': {
@@ -80,7 +81,7 @@ def select_route():
     return selected_route, travel_time
 
 # Simulate bus picking up passengers and traveling between stops along the route
-def bus(env, passengers):
+def bus(env, passengers, nb):
     available_seats = MAX_CAPACITY
     bus_counts = [5, 7, 10, 15]
     counter = 0 
@@ -114,45 +115,31 @@ def bus(env, passengers):
         yield env.timeout(travel_time)
         print(f'Bus trip completed at {env.now}')
 
-# def run_simulation(nb):
-#     env = simpy.Environment()
-#     passengers = []
-#     utilization = []
-    
-#     env.process(passenger_generator(env, passengers))
-#     for _ in range(nb):
-#         env.process(bus(env, passengers))
-    
-#     env.run(until=100)
-    
-#     avg_utilization = np.mean(utilization) if utilization else 0
-#     return avg_utilization
+def run_simulation(nb):
+    env = simpy.Environment()
+    passengers = []
+    env.process(passenger_generator(env, passengers))
+    env.process(bus(env, passengers, nb))
+    env.run(until=800)
+    return len(passengers)
 
-# # Vary the number of buses and calculate utilization
-# bus_counts = [5, 7, 10, 15]
-# results = {}
+# Run the simulation for different nb values and calculate average utilization and standard error
+nb_values = [5, 7, 10, 15]
+num_runs = 15
+averages = []
+standard_errors = []
 
-# for nb in bus_counts:
-#     utilizations = []
-#     for _ in range(15):
-#         utilizations.append(run_simulation(nb))
-    
-#     avg_utilization = np.mean(utilizations)
-#     std_error = np.std(utilizations) / np.sqrt(len(utilizations))
-    
-#     results[nb] = {
-#         "average_utilization": avg_utilization,
-#         "standard_error": std_error
-#     }
+for nb in nb_values:
+    utilizations = [run_simulation(nb) for _ in range(num_runs)] # Calculate the utilization for each run, by dividing the number of passengers by the bus capacity
+    avg_utilization = np.mean(utilizations) # Calculate the average utilization
+    std_error = np.std(utilizations) / np.sqrt(num_runs) # Calculate the standard error
+    averages.append(avg_utilization)
+    standard_errors.append(std_error)
 
-# print(results)
-
-# Set up the environment and start the processes
-env = simpy.Environment()
-passengers = []
-env.process(passenger_generator(env, passengers))
-env.process(bus(env, passengers))
-
-# Run the simulation
-env.run(until=800)
-#run_simulation(1)
+# Plot the results with error bars
+plt.errorbar(nb_values, averages, yerr=standard_errors, fmt='o', capsize=5, label='Average Utilization')
+plt.xlabel('nb values')
+plt.ylabel('Average Utilization')
+plt.title('Average Utilization with Standard Error')
+plt.legend()
+plt.show()
