@@ -15,14 +15,14 @@ TRAVEL_TIMES = []
 
 # Define bus routes
 routes = {
-    'Route_13': {'stops': [0, 3, 5], 'roads': [0, 4, 7, 12]},
-    'Route_14': {'stops': [1, 4, 6], 'roads': [2, 6, 10, 14]},
-    'Route_23': {'stops': [1, 4, 5], 'roads': [2, 6, 8, 12]},
-    'Route_24': {'stops': [2, 3, 6], 'roads': [3, 5, 9, 14]},
-    'Route_31': {'stops': [15, 13, 10], 'roads': [12, 7, 4, 0]},
-    'Route_41': {'stops': [16, 14, 11], 'roads': [14, 10, 6, 2]},
-    'Route_32': {'stops': [15, 14, 11], 'roads': [12, 8, 6, 2]},
-    'Route_42': {'stops': [16, 13, 12], 'roads': [14, 9, 7, 3]}
+    'Route_13': {'stops': [0, 3, 5], 'roads': [0, 4, 7, 12], 'waiting_time': 0},
+    'Route_14': {'stops': [1, 4, 6], 'roads': [2, 6, 10, 14], 'waiting_time': 0},
+    'Route_23': {'stops': [1, 4, 5], 'roads': [2, 6, 8, 12], 'waiting_time': 0},
+    'Route_24': {'stops': [2, 3, 6], 'roads': [3, 5, 9, 14], 'waiting_time': 0},
+    'Route_31': {'stops': [15, 13, 10], 'roads': [12, 7, 4, 0], 'waiting_time': 0},
+    'Route_41': {'stops': [16, 14, 11], 'roads': [14, 10, 6, 2], 'waiting_time': 0},
+    'Route_32': {'stops': [15, 14, 11], 'roads': [12, 8, 6, 2], 'waiting_time': 0},
+    'Route_42': {'stops': [16, 13, 12], 'roads': [14, 9, 7, 3], 'waiting_time': 0}
 }
 
 # Passenger arrival rates
@@ -74,6 +74,10 @@ def find_route_with_stops(bus_stop, end_stop, routes):
                 return route_name
         return route_name
 
+def passenger_waiting_time(passenger):
+    return passenger.env.now - passenger.arrival_time
+
+
 # Passenger arrival process
 def passenger_arrival(env, bus_stops):
     while True:
@@ -111,25 +115,23 @@ def passenger_arrival(env, bus_stops):
                 print(f'Passenger left Bus Stop {bus_stop} at {env.now}')
                 #må fjerne passasjer fra passangers listen og
 
-# Find route with most passengers
-def sorted_routes_with_most_passengers(routes, bus_stops):
-    # Initialize the list to store passenger counts for each route
-    route_passenger_counts = []
 
-    # Iterate over routes and count passengers
-    for route_name, route_info in routes.items():
-        total_passengers = 0
-        for stop in route_info['stops']:
-            total_passengers += len(bus_stops[stop]['passengers'])
-        route_passenger_counts.append((route_name, total_passengers))
+def sorted_routes_with_longest_waitingtime(routes, bus_stops):
+    route_waiting_times = []
+    # Iterate over routes and count passengers and their waiting times
+    for this_route in list(routes.keys()):
+        total_waiting_time = 0
+        for stop in routes[this_route]['stops']:
+            for passenger in bus_stops[stop]['passengers']:
+                total_waiting_time += passenger_waiting_time(passenger)
+        route_waiting_times.append((this_route, total_waiting_time))
 
     # Sort the list of routes by the number of passengers in descending order
-    route_passenger_counts.sort(key=lambda x: x[1], reverse=True)
+    route_waiting_times.sort(key=lambda x: x[1], reverse=True)
+    sorted_route_names = [route_name for route_name, _ in route_waiting_times]
+    print(sorted_route_names)
+    # Create a list of tuples with route names and their respective total waiting times
 
-    # Remove the passenger counts, keeping only the route names
-    sorted_route_names = [route_name for route_name, _ in route_passenger_counts]
-
-    
     return sorted_route_names
 
 # Bus class to simulate each bus
@@ -191,7 +193,7 @@ def simulation_process(env, number_of_buses):
     yield env.timeout(10)  # Introducing the timeout here
 
     for i in range(number_of_buses):
-        current_routes = sorted_routes_with_most_passengers(routes, bus_stops)
+        current_routes = sorted_routes_with_longest_waitingtime(routes, bus_stops)
 
         if (current_routes == prev_routes):  # If all routes have been assigned
                 prev_routes = []  # Reset the assigned routes
@@ -201,10 +203,10 @@ def simulation_process(env, number_of_buses):
         for route in current_routes:
             if route not in prev_routes:  # Check if route hasn't been assigned
                 assigned_route = route
+                print(f"Bus {i} assigned to route {assigned_route}")
                 break
         
         if assigned_route:  # If we found an unassigned route
-            print(f"Bus {i} assigned to route {assigned_route}")
             bus = Bus(env, f'bus_id{i}', assigned_route, MAX_CAPACITY)
             buses[f'bus_id{i}'] = {'passengers': []}
             print("BUS ID: ", bus.bus_id)
@@ -229,6 +231,9 @@ def util_run_simulation():
     for nb in bus_numbers:
         avg_util_per_run = []
 
+        for key in list(routes.keys()):
+            routes[key]['waiting_time'] = 0
+
         for _ in range(repetitions):
             for i in list(bus_stops.keys()):
                 bus_stops[i]['passengers'].clear()
@@ -245,8 +250,6 @@ def util_run_simulation():
         std_err = np.std(avg_util_per_run) / np.sqrt(repetitions)
         utilizations_mean.append(avg_util)
         utilizations_std_err.append(std_err)
-        print(utilizations_mean)
-        print(utilizations_std_err)
 
         # Standard error of travel times
         #MÅ LAGRES I EN LSITE FOR HVER BUSS
@@ -255,6 +258,8 @@ def util_run_simulation():
         travel_utilizations_mean.append(util_travel_time)
         travel_utilizations_std_err.append(std_travel_time)
         print("Travel times: ", travel_utilizations_mean)
+
+
         
     # Plotting
     plt.errorbar(bus_numbers, utilizations_mean, yerr=utilizations_std_err, fmt='o', capsize=5, label='Avg Utilization')

@@ -26,7 +26,10 @@ routes = {
 }
 
 # Passenger arrival rates
-arrival_rate_stop = [0.3, 0.6, 0.1, 0.1, 0.3, 0.9, 0.2, 0.5, 0.6, 0.4, 0.6, 0.4, 0.6, 0.4]
+arrival_rate_stop = []
+for i in range (0, 14):
+    arrival_rate_stop.append(0.9)
+print(arrival_rate_stop)
 bus_stops = {
     0: {'passengers': [], 'arrival_rate': arrival_rate_stop[0]},
     1: {'passengers': [], 'arrival_rate': arrival_rate_stop[1]},
@@ -254,7 +257,8 @@ def util_run_simulation():
         std_travel_time = np.std(TRAVEL_TIMES) / np.sqrt(len(TRAVEL_TIMES))
         travel_utilizations_mean.append(util_travel_time)
         travel_utilizations_std_err.append(std_travel_time)
-        print("Travel times: ", travel_utilizations_mean)
+        print(travel_utilizations_mean)
+        print(travel_utilizations_std_err)
         
     # Plotting
     plt.errorbar(bus_numbers, utilizations_mean, yerr=utilizations_std_err, fmt='o', capsize=5, label='Avg Utilization')
