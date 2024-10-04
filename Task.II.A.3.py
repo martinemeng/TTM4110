@@ -5,15 +5,14 @@ import matplotlib.pyplot as plt
 
 # Constants
 MAX_CAPACITY = 20  # Bus capacity
-INTERVAL = 1  # Time between passenger arrivals
 TRIP_TIME = 10  # Time for a bus trip
-PROB_LEAVE_STOP = 0.3  # Probability of a passenger leaving the bus stop
-RUN_TIME = 50  # Total simulation run time
+PROB_LEAVE_BUS = 0.3  # Probability of a passenger leaving the bus stop
+RUN_TIME = 60*24  # Total simulation run time
 
-# Passenger arrival rates (no change)
+# Passenger arrival rates
 arrival_rate_stop = [0.3, 0.6, 0.1, 0.1, 0.3, 0.9, 0.2, 0.5, 0.6, 0.4, 0.6, 0.4, 0.6, 0.4]
 
-# Travel times between stops (no change)
+# Travel times between stops 
 travel_times = [3, 7, 6, 1, 4, 3, 9, 1, 3, 8, 8, 5, 6, 2, 3]
 
 
@@ -52,21 +51,24 @@ bus_stops = {
     16 : {'passengers': [], 'arrival_rate': arrival_rate_stop[13]}
 }
 
+buses = {
+}
+
+def passenger_arrival(env, bus_stops):
+    for bus_stop in bus_stops.keys():
+        env.process(generate_passengers(env, bus_stop, bus_stops[bus_stop]['arrival_rate']))
 
 # Passenger arrival process
-def passenger_arrival(env, bus_stops):
+def generate_passengers(env, bus_stop, arrival_rate):
     while True:
-        bus_stop = random.choices(
-            list(bus_stops.keys()),
-            weights=[bus_stops[stop]['arrival_rate'] for stop in bus_stops],
-            k=1)[0]
+        # Inter-arrival time follows an exponential distribution
+        inter_arrival_time = random.expovariate(arrival_rate)
+        yield env.timeout(inter_arrival_time)
+
         passenger = {'bus_stop': bus_stop}
         bus_stops[bus_stop]['passengers'].append(passenger)
         print(f'Passenger generated at time {env.now} at stop {bus_stop}. Total at stop: {len(bus_stops[bus_stop]["passengers"])}')
-        yield env.timeout(INTERVAL)
-        if random.random() < PROB_LEAVE_STOP and passenger in bus_stops[bus_stop]['passengers']:
-            bus_stops[bus_stop]['passengers'].remove(passenger)
-            print(f'Passenger left Bus Stop {bus_stop} at time {env.now}. Total at stop: {len(bus_stops[bus_stop]["passengers"])}')
+        
 
 # Find route with most passengers
 def sorted_routes_with_most_passengers(routes, bus_stops):
@@ -107,15 +109,23 @@ class Bus:
             counter = 0
             yield self.env.timeout(travel_times[selected_route[counter]])
             for stop in routes[self.route]['stops']:
+                leaves = 0
                 # Drop off passengers
-                leaves = random.randint(0, (MAX_CAPACITY-self.available_seats))  # Random passengers leavin
+                for _ in range(self.max_capacity-self.available_seats):
+                    if random.random() < PROB_LEAVE_BUS:
+                        leaves += 1
+                        buses[self.bus_id]['passengers'] -= 1
+
+
                 self.available_seats += leaves
                 print(f'{leaves} Passenger dropped off at stop {stop+1} by Bus {self.bus_id} at {self.env.now}')
 
                 # Pick up passengers
+    
                 picked_up = 0
                 while bus_stops[stop]['passengers'] and picked_up < self.available_seats:
                     bus_stops[stop]['passengers'].pop(0)
+                    buses[self.bus_id]['passengers'] += 1
                     picked_up += 1
                     self.available_seats -= 1
                     print(f'Passenger picked up at stop {stop} by Bus {self.bus_id} at {self.env.now}')
@@ -149,6 +159,7 @@ def simulation_process(env, number_of_buses):
         
         if assigned_route:  # If we found an unassigned route
             print(f"Bus {i} assigned to route {assigned_route}")
+            buses[f'bus_id{i}'] = {'passengers': 0}
             bus = Bus(env, f'bus_id{i}', assigned_route, MAX_CAPACITY)
             print("BUS ID: ", bus.bus_id)
             prev_routes.append(assigned_route)  # Mark the route as assigned
@@ -157,7 +168,7 @@ def simulation_process(env, number_of_buses):
 
 def run_simulation(number_of_buses):
     env = simpy.Environment()
-    env.process(passenger_arrival(env, bus_stops))
+    passenger_arrival(env, bus_stops)
     env.process(simulation_process(env, number_of_buses))  # Create a separate process
     env.run(until=RUN_TIME)
 
@@ -171,7 +182,6 @@ def util_run_simulation():
 
     for nb in bus_numbers:
         avg_util_per_run = []
-
         for _ in range(repetitions):
             for i in list(bus_stops.keys()):
                 bus_stops[i]['passengers'].clear()
@@ -187,7 +197,8 @@ def util_run_simulation():
         std_err = np.std(avg_util_per_run) / np.sqrt(repetitions)
         utilizations_mean.append(avg_util)
         utilizations_std_err.append(std_err)
-    print(utilizations_mean)
+    print("Utilization mean: ", utilizations_mean)
+    print("Utilization standard error: ",  utilizations_std_err)
 
 
     # Plotting
