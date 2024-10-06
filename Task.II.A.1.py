@@ -14,7 +14,7 @@ Y = np.random.exponential(scale=1/lambda_T, size=samples)
 X_sorted = np.sort(X)
 Y_sorted = np.sort(Y)
 
-# Step 3: Plot X(j) against Y(j)
+# Plot X(j) against Y(j)
 plt.plot(X_sorted, Y_sorted, marker='o', linestyle='-', color='b')
 plt.title("Plot of Exponentially Distributed Samples (X and Y)")
 plt.xlabel("X (sorted)")
