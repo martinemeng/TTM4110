@@ -254,6 +254,8 @@ def util_run_simulation():
         travel_utilizations_std_err.append(std_travel_time)
         print("Utilization mean: ", utilizations_mean)
         print("Utilization standard error: ",  utilizations_std_err)
+        print("Travel time mean: ", travel_utilizations_mean)
+        print("Travel time standard error: ", travel_utilizations_std_err)
         
     # Plotting
     plt.errorbar(bus_numbers, utilizations_mean, yerr=utilizations_std_err, fmt='o', capsize=5, label='Avg Utilization')

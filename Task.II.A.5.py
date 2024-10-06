@@ -82,11 +82,9 @@ def passenger_arrival(env, bus_stops):
 # Passenger arrival process
 def generate_passengers(env, bus_stop, arrival_rate):
     while True:
-
         # Inter-arrival time follows an exponential distribution
         inter_arrival_time = random.expovariate(arrival_rate)
         yield env.timeout(inter_arrival_time)
-    
         
         # Find a valid end stop on the same route
         valid_end_stops = []
@@ -100,12 +98,9 @@ def generate_passengers(env, bus_stop, arrival_rate):
 
         if valid_end_stops:
             end_stop = random.choice(valid_end_stops)
-            route123 = find_route_with_stops(bus_stop, end_stop, routes)
-            passenger = Passenger(env, bus_stop, end_stop=end_stop, route=route123)
-            print("passenger ROUTE: ", passenger.route)
-            print("passenger end stop: ", passenger.end_stop)
+            route123 = find_route_with_stops(bus_stop, end_stop, routes) # Find route with stops
+            passenger = Passenger(env, bus_stop, end_stop=end_stop, route=route123) # Create a passenger
             bus_stops[bus_stop]['passengers'].append(passenger)
-            #passengers.append(passenger)
             print(f'Passenger generated at {env.now}. At bus Stop {bus_stop} to {end_stop}')
 
 # Find route with most passengers
@@ -153,16 +148,13 @@ class Bus:
                     # Goes on the bus
                     if passenger.route == self.route:
                         if bus_stops[stop]['passengers'] and picked_up < self.available_seats:
-                            #passengers.remove(passenger) må fjerne fra dict 
                             self.available_seats -= 1
                             picked_up += 1
                             buses[self.bus_id]['passengers'].append(passenger)
-                            #TRAVEL_TIMES.append(passenger.leave_bus())
                             passenger_index = bus_stops[stop]['passengers'].index(passenger)
                             bus_stops[stop]['passengers'].pop(passenger_index)
                 print(f'Passenger picked up at stop {stop} by Bus {self.bus_id} at {self.env.now}')
                 
-
             # Drop off passengers
             leaves = 0
             for passenger in buses[self.bus_id]['passengers']:
@@ -252,6 +244,8 @@ def util_run_simulation():
         travel_utilizations_std_err.append(std_travel_time)
         print("Utilization mean: ", utilizations_mean)
         print("Utilization standard error: ",  utilizations_std_err)
+        print("Travel time mean: ", travel_utilizations_mean)
+        print("Travel time standard error: ", travel_utilizations_std_err)
         
     # Plotting
     plt.errorbar(bus_numbers, utilizations_mean, yerr=utilizations_std_err, fmt='o', capsize=5, label='Avg Utilization')
